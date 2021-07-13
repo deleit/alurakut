@@ -17,12 +17,11 @@ export default function Home() {
   const pessoasFavoritas = [
     'juunegreiros',
     'omariosouto',
-    'steppat',
+    'peas',
     'rafaballerini',
-    'CViniciusSDias',
-    'GuilhermeMatheus'
+    'marcobrunodev',
+    'felipefialho'
   ]
-
   return (
     <>  
       <AlurakutMenu />
@@ -53,7 +52,7 @@ export default function Home() {
                 return (
                   <li>
                     <a href={`/users/${itemAtual}`} key={itemAtual}>
-                      <img src={`https://github.com/${itemAtual}.png`}></img>
+                      <img src={`https://github.com/${itemAtual}.png`} />
                       <span>{itemAtual}</span>
                     </a>
                   </li>
