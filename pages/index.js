@@ -5,6 +5,7 @@ import { AlurakutMenu, AlurakutProfileSidebarMenuDefault, OrkutNostalgicIconSet 
 import { ProfileRelationsBoxWrapper } from '../src/components/ProfileRelations';
 
 function ProfileSidebar(propriedades) {
+  console.log(propriedades)
   return (
     <Box as="aside">
       <img src={`https://github.com/${propriedades.githubUser}.png`} style={{ borderRadius: '8px' }} />
@@ -22,9 +23,38 @@ function ProfileSidebar(propriedades) {
   )
 }
 
+function ProfileRelationsBox(propriedades) {
+  let seeMoreUrl = "#"
+  if (propriedades.title == "Seguindo") {
+    seeMoreUrl = `https://github.com/${propriedades.githubUser}?tab=following`
+  } else if (propriedades.title == "Seguidores") {
+    seeMoreUrl = `https://github.com/${propriedades.githubUser}?tab=followers`
+  }
+  return (
+    <ProfileRelationsBoxWrapper>
+      <h2 className="smallTitle">
+        {propriedades.title} ({propriedades.items.length})
+      </h2>
+      <ul>
+        {propriedades.items.map((itemAtual) => {
+          return (
+            <li key={itemAtual.id}>
+              <a href={`https://github.com/${itemAtual.login}`}>
+                <img src={itemAtual.avatar_url} />
+                <span>{itemAtual.login}</span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+      <a className="boxLink" href={`${seeMoreUrl}`}>Ver todas</a>
+    </ProfileRelationsBoxWrapper>
+  )
+}
+
+
 export default function Home() {
   const githubUser = 'deleit';
-
   const [comunidades, setComunidades] = React.useState([{
     id: '12312415123',
     title: 'Eu odeio acordar cedo',
@@ -34,7 +64,7 @@ export default function Home() {
     title: 'Anão vestido de palhaço mata 8',
     image: 'https://img10.orkut.br.com/community/f51212ffdbeab26effb3793dfe1b2135.jpg'
   }, {
-    id: '12315124',
+    id: '112413413',
     title: 'Cabras não tem muitas ambições',
     image: 'https://img10.orkut.br.com/community/99265afeff3b5c002ecf9e29506e015b.png'
   }, {
@@ -49,16 +79,31 @@ export default function Home() {
 
   ]);
 
-  const pessoasFavoritas = [
-    'juunegreiros',
-    'omariosouto',
-    'peas',
-    'rafaballerini',
-    'marcobrunodev',
-    'felipefialho',
-    'deleit',
-    'steppat'
-  ]
+  //get followers
+  const [seguidores, setSeguidores] = React.useState([]);
+  React.useEffect(function() {
+    fetch(`https://api.github.com/users/${githubUser}/followers`)
+    .then(function (respostaDoServidor) {
+      return respostaDoServidor.json();
+    })
+    .then(function (respostaCompleta) {
+      setSeguidores(respostaCompleta);
+    })
+  }, [])
+
+  //get following
+  const [seguindo, setSeguindo] = React.useState([]);
+  React.useEffect(function() {
+    fetch(`https://api.github.com/users/${githubUser}/following`)
+    .then(function (respostaDoServidor) {
+      return respostaDoServidor.json();
+    })
+    .then(function (respostaCompleta) {
+      setSeguindo(respostaCompleta);
+    })
+  }, [])
+
+  console.log('seguidores antes do return ', seguidores);
 
   return (
     <>  
@@ -120,25 +165,10 @@ export default function Home() {
         </div>
         
         <div className="profileRelaionsArea" style={{ gridArea: 'profileRelationsArea' }}>
-          <ProfileRelationsBoxWrapper>
-            <h2 className="smallTitle">
-              Pessoas da comunidade ({pessoasFavoritas.length})
-            </h2>
-
-            <ul>
-              {pessoasFavoritas.map((itemAtual) => {
-                return (
-                  <li key={itemAtual}>
-                    <a href={`https://github.com/${itemAtual}`}>
-                      <img src={`https://github.com/${itemAtual}.png`} />
-                      <span>{itemAtual}</span>
-                    </a>
-                  </li>
-                )
-              })}
-            </ul>
-            <a className="boxLink" href={`https://github.com/${githubUser}?tab=followers`}>Ver todas</a>
-          </ProfileRelationsBoxWrapper>
+          <ProfileRelationsBox title="Seguidores" items={seguidores} githubUser={githubUser} />
+          
+          <ProfileRelationsBox title="Seguindo" items={seguindo} githubUser={githubUser} />
+          
           <ProfileRelationsBoxWrapper>
             <h2 className="smallTitle">
               Comunidades ({comunidades.length})
