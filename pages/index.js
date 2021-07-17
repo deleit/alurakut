@@ -5,7 +5,6 @@ import { AlurakutMenu, AlurakutProfileSidebarMenuDefault, OrkutNostalgicIconSet 
 import { ProfileRelationsBoxWrapper } from '../src/components/ProfileRelations';
 
 function ProfileSidebar(propriedades) {
-  console.log(propriedades)
   return (
     <Box as="aside">
       <img src={`https://github.com/${propriedades.githubUser}.png`} style={{ borderRadius: '8px' }} />
@@ -55,29 +54,7 @@ function ProfileRelationsBox(propriedades) {
 
 export default function Home() {
   const githubUser = 'deleit';
-  const [comunidades, setComunidades] = React.useState([{
-    id: '12312415123',
-    title: 'Eu odeio acordar cedo',
-    image: 'https://alurakut.vercel.app/capa-comunidade-01.jpg'
-  }, {
-    id: '12315124',
-    title: 'Anão vestido de palhaço mata 8',
-    image: 'https://img10.orkut.br.com/community/f51212ffdbeab26effb3793dfe1b2135.jpg'
-  }, {
-    id: '112413413',
-    title: 'Cabras não tem muitas ambições',
-    image: 'https://img10.orkut.br.com/community/99265afeff3b5c002ecf9e29506e015b.png'
-  }, {
-    id: '12312312414',
-    title: 'Se eu Morrer Minha Mãe me Mata',
-    image: 'https://img10.orkut.br.com/community/2c89c09d9ddec38f6a874e3ca58d9135.jpg'
-  }, {
-    id: '123123141',
-    title: 'ALL STAR bom é ALL STAR sujo!',
-    image: 'https://i.pinimg.com/originals/2b/a6/cc/2ba6cc84f8f67f8adff0a1facab16355.jpg'
-  }
-
-  ]);
+  const [comunidades, setComunidades] = React.useState([]);
 
   //get followers
   const [seguidores, setSeguidores] = React.useState([]);
@@ -93,7 +70,9 @@ export default function Home() {
 
   //get following
   const [seguindo, setSeguindo] = React.useState([]);
+  
   React.useEffect(function() {
+    // GET
     fetch(`https://api.github.com/users/${githubUser}/following`)
     .then(function (respostaDoServidor) {
       return respostaDoServidor.json();
@@ -101,9 +80,34 @@ export default function Home() {
     .then(function (respostaCompleta) {
       setSeguindo(respostaCompleta);
     })
+
+    // API GraphQL
+    fetch('https://graphql.datocms.com/', {
+      method: 'POST',
+      headers: {
+        'Authorization': '90459c92154f6f7b74ab16184f54a8',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ "query": `query {
+        allCommunities {
+          id
+          title
+          imageUrl
+          creatorslug
+        }
+      }`
+      })
+    })
+    .then((response) => response.json()) // Pega o retorno do response.json() e já retorna
+    .then((respostaCompleta) => {
+      const comunidadesVindasDoDato = respostaCompleta.data.allCommunities;
+      console.log(comunidadesVindasDoDato)
+      setComunidades(comunidadesVindasDoDato)
+    })
   }, [])
 
-  console.log('seguidores antes do return ', seguidores);
+  
 
   return (
     <>  
@@ -133,13 +137,25 @@ export default function Home() {
               console.log('Campo: ', dadosDoForm.get('image'));
 
               const comunidade = {
-                id: new Date().toISOString(),
                 title: dadosDoForm.get('title'),
-                image: dadosDoForm.get('image'),
+                imageUrl: dadosDoForm.get('image'),
+                creatorslug: githubUser,
               }
 
-              const comunidadesAtualizadas = [...comunidades, comunidade];
-              setComunidades(comunidadesAtualizadas)
+              fetch('/api/comunidades', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(comunidade)
+              })
+              .then(async (response) => {
+                const dados = await response.json();
+                console.log(dados.registroCriado);
+                const comunidade = dados.registroCriado;
+                const comunidadesAtualizadas = [...comunidades, comunidade];
+                setComunidades(comunidadesAtualizadas);
+              })
             }}>
             <div>
               <input 
@@ -177,8 +193,8 @@ export default function Home() {
               {comunidades.map(($itemAtual) => {
                 return (
                   <li key={$itemAtual.id}>
-                    <a href={`/users/${$itemAtual.title}`}>
-                      <img src={$itemAtual.image} />
+                    <a href={`/communities/${$itemAtual.id}`}>
+                      <img src={$itemAtual.imageUrl} />
                       <span>{$itemAtual.title}</span>
                     </a>
                   </li>
