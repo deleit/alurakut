@@ -3,6 +3,8 @@ import MainGrid from '../src/components/MainGrid';
 import Box from '../src/components/Box';
 import { AlurakutMenu, AlurakutProfileSidebarMenuDefault, OrkutNostalgicIconSet } from '../src/lib/AlurakutCommons';
 import { ProfileRelationsBoxWrapper } from '../src/components/ProfileRelations';
+import nookies from 'nookies';
+import jwt from 'jsonwebtoken';
 
 function ProfileSidebar(propriedades) {
   return (
@@ -51,9 +53,8 @@ function ProfileRelationsBox(propriedades) {
   )
 }
 
-
-export default function Home() {
-  const githubUser = 'deleit';
+export default function Home(props) {
+  const githubUser = props.githubUser;
   const [comunidades, setComunidades] = React.useState([]);
 
   //get followers
@@ -127,57 +128,63 @@ export default function Home() {
             <OrkutNostalgicIconSet />
           </Box>
 
-          <Box>
-            <h2 className="subTitle">O que você deseja fazer?</h2>
-            <form onSubmit={function handleCriaComunidade(e) {
-              e.preventDefault();
-              const dadosDoForm = new FormData(e.target);
+          {githubUser === 'deleit'
+            ? <Box>
+                <h2 className="subTitle">O que você deseja fazer?</h2>
+                <form onSubmit={function handleCriaComunidade(e) {
+                  e.preventDefault();
+                  const dadosDoForm = new FormData(e.target);
 
-              console.log('Campo: ', dadosDoForm.get('title'));
-              console.log('Campo: ', dadosDoForm.get('image'));
+                  console.log('Campo: ', dadosDoForm.get('title'));
+                  console.log('Campo: ', dadosDoForm.get('image'));
 
-              const comunidade = {
-                title: dadosDoForm.get('title'),
-                imageUrl: dadosDoForm.get('image'),
-                creatorslug: githubUser,
-              }
+                  const comunidade = {
+                    title: dadosDoForm.get('title'),
+                    imageUrl: dadosDoForm.get('image'),
+                    creatorslug: githubUser,
+                  }
 
-              fetch('/api/comunidades', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(comunidade)
-              })
-              .then(async (response) => {
-                const dados = await response.json();
-                console.log(dados.registroCriado);
-                const comunidade = dados.registroCriado;
-                const comunidadesAtualizadas = [...comunidades, comunidade];
-                setComunidades(comunidadesAtualizadas);
-              })
-            }}>
-            <div>
-              <input 
-                placeholder="Qual vai ser o nome da sua comunidade?"
-                name="title"
-                aria-label="Qual vai ser o nome da sua comunidade?"
-                type="text"
-              />
-            </div>
-            <div>
-              <input 
-                placeholder="Coloque uma URL para usarmos de capa"
-                name="image"
-                aria-label="Coloque uma URL para usarmos de capa"
-              />
-            </div>
+                  fetch('/api/comunidades', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(comunidade)
+                  })
+                  .then(async (response) => {
+                    const dados = await response.json();
+                    console.log(dados.registroCriado);
+                    const comunidade = dados.registroCriado;
+                    const comunidadesAtualizadas = [...comunidades, comunidade];
+                    setComunidades(comunidadesAtualizadas);
+                  })
+                }}>
+                <div>
+                  <input 
+                    placeholder="Qual vai ser o nome da sua comunidade?"
+                    name="title"
+                    aria-label="Qual vai ser o nome da sua comunidade?"
+                    type="text"
+                  />
+                </div>
+                <div>
+                  <input 
+                    placeholder="Coloque uma URL para usarmos de capa"
+                    name="image"
+                    aria-label="Coloque uma URL para usarmos de capa"
+                  />
+                </div>
 
-            <button>
-              Criar comunidade
-            </button>
-            </form>
-          </Box>
+                <button>
+                  Criar comunidade
+                </button>
+                </form>
+              </Box>
+
+              : ''
+          }
+
+
         </div>
         
         <div className="profileRelaionsArea" style={{ gridArea: 'profileRelationsArea' }}>
@@ -208,3 +215,30 @@ export default function Home() {
     </>
   )
 }
+
+export async function getServerSideProps(context) {
+  const cookies = nookies.get(context);
+  const token = cookies.USER_TOKEN;
+  const { isAuthenticated } = await fetch('https://alurakut.vercel.app/api/auth', {
+    headers: {
+      Authorization: token
+    }
+  })
+  .then((resposta) => resposta.json())
+  
+  if(!isAuthenticated) {
+    return {
+      redirect: {
+        destination: '/login',
+        permanent: false,
+      }
+    }
+  }
+
+  const { githubUser } = jwt.decode(token);
+  return {
+    props: {
+      githubUser
+    },
+  }
+} 
